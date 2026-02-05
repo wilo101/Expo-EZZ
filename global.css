@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: 0 0 0;
+    --color-invert: 255 255 255;
+    --color-secondary: 255 255 255;
+    --color-background: 244 244 245; /* #F4F4F5 */
+    --color-text: 0 0 0;
+    --color-border: 0 0 0;
+    --opacity-border: 0.15;
+  }
+
+  .dark {
+    --color-primary: 255 255 255;
+    --color-invert: 0 0 0;
+    --color-secondary: 30 30 30; /* #1e1e1e */
+    --color-background: 20 20 20; /* #141414 */
+    --color-text: 255 255 255;
+    --color-border: 255 255 255;
+    --opacity-border: 0.15;
+  }
+}
+
