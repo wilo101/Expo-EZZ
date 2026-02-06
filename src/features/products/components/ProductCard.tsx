@@ -4,8 +4,9 @@ import { Product } from "../types";
 import { Text } from "../../../core/components/Text";
 import { Heart, ShoppingBag } from "lucide-react-native";
 import { useRouter } from "expo-router";
+import { memo } from "react";
 
-export const ProductCard = ({ product }: { product: Product }) => {
+const ProductCardComponent = ({ product }: { product: Product }) => {
     const router = useRouter();
 
     return (
@@ -55,3 +56,5 @@ export const ProductCard = ({ product }: { product: Product }) => {
         </TouchableOpacity>
     );
 };
+
+export const ProductCard = memo(ProductCardComponent);
