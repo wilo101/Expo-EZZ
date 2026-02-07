@@ -3,6 +3,11 @@ import apiClient from "../../../core/api/apiClient";
 import { QUERY_CONFIG } from "../../../core/config/query";
 import { Product } from "../types";
 
+// Stable constants to prevent unnecessary re-renders
+const FALLBACK_DATE = new Date(0).toISOString();
+const PLACEHOLDER_IMAGES = ["https://placeholder.com/prod.jpg"];
+const EMPTY_ARRAY: string[] = [];
+
 const parseProductImages = (apiProduct: any): string[] => {
     const imageUrls: string[] = [];
     const seenUrls = new Set<string>();
@@ -68,7 +73,7 @@ const parseProductImages = (apiProduct: any): string[] => {
         });
     }
 
-    return imageUrls.length > 0 ? imageUrls : ["https://placeholder.com/prod.jpg"];
+    return imageUrls.length > 0 ? imageUrls : PLACEHOLDER_IMAGES;
 };
 
 const parseProductSizes = (apiProduct: any): string[] => {
@@ -80,12 +85,13 @@ const parseProductSizes = (apiProduct: any): string[] => {
 
     // 3. variants array
     if (Array.isArray(apiProduct.variants)) {
-        return apiProduct.variants
+        const variants = apiProduct.variants
             .map((v: any) => v.size?.toString() || "")
             .filter((s: string) => s.length > 0);
+        return variants.length > 0 ? variants : EMPTY_ARRAY;
     }
 
-    return [];
+    return EMPTY_ARRAY;
 };
 
 const mapApiProductToProduct = (apiProduct: any): Product => {
@@ -117,8 +123,6 @@ const mapApiProductToProduct = (apiProduct: any): Product => {
         }
     }
 
-    console.log(`Mapping product ${id}: Price=${price}, Name=${apiProduct.name}, Category=${apiProduct.category || apiProduct.category_name}, Raw=${JSON.stringify(apiProduct).substring(0, 100)}`);
-
     return {
         id,
         name: apiProduct.name || apiProduct.title || apiProduct.product_name || "Unknown Product",
@@ -129,8 +133,8 @@ const mapApiProductToProduct = (apiProduct: any): Product => {
         images: parseProductImages(apiProduct),
         material: apiProduct.material || apiProduct.metal_type || "925 Sterling Silver",
         inStock: defaultVariant.quantity > 0 || apiProduct.inStock === true || (apiProduct.quantity && apiProduct.quantity > 0),
-        createdAt: apiProduct.createdAt || apiProduct.created_at || new Date().toISOString(),
-        updatedAt: apiProduct.updatedAt || apiProduct.updated_at || new Date().toISOString(),
+        createdAt: apiProduct.createdAt || apiProduct.created_at || FALLBACK_DATE,
+        updatedAt: apiProduct.updatedAt || apiProduct.updated_at || FALLBACK_DATE,
         sizes: parseProductSizes(apiProduct),
     };
 };
