@@ -151,7 +151,7 @@ export default function HomeScreen() {
                             activeOpacity={0.9}
                             onPress={() => {
                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                                router.push("/tools/ring-sizer");
+                                router.push("/tools/camera-ring-sizer");
                             }}
                             className="p-1"
                         >
@@ -168,7 +168,7 @@ export default function HomeScreen() {
                                     </View>
                                 </View>
                                 <Text variant="heading" className="text-white text-2xl mb-2">Find Your Perfect{"\n"}Ring Size</Text>
-                                <Text className="text-gray-400 text-xs leading-5">Measure your finger accurately in seconds using our digital sizing tool.</Text>
+                                <Text className="text-gray-400 text-xs leading-5">صوّر يدك مع بطاقة لقياس مقاسك بدقة في ثوانٍ</Text>
                             </LinearGradient>
                         </TouchableOpacity>
                     </BlurView>
@@ -178,7 +178,7 @@ export default function HomeScreen() {
                         <BlurView intensity={20} className="flex-1 rounded-3xl overflow-hidden border border-white/10">
                             <TouchableOpacity
                                 activeOpacity={0.9}
-                                onPress={() => router.push("/gamification/silver-challenge")}
+                                onPress={() => router.push("/gamification/mystery-box")}
                                 className="p-4 h-40 justify-between"
                             >
                                 <LinearGradient colors={["rgba(255,255,255,0.03)", "transparent"]} style={StyleSheet.absoluteFill} />
@@ -222,27 +222,50 @@ export default function HomeScreen() {
                         {colsLoading ? (
                             <ActivityIndicator color="#DBAC33" />
                         ) : (
-                            collections?.map((col: any) => (
-                                <TouchableOpacity
-                                    key={col.id}
-                                    className="mr-6 items-center"
-                                    onPress={() => {
-                                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                        router.push("/browse");
-                                    }}
-                                >
-                                    <View className="w-[72px] h-[72px] rounded-full border border-[#DBAC33]/30 p-1 mb-2">
-                                        <Image
-                                            source={{ uri: col.imageUrl }}
-                                            className="w-full h-full rounded-full"
-                                            contentFit="cover"
-                                        />
-                                    </View>
-                                    <Text variant="bold" className="text-gray-300 text-[10px] uppercase tracking-wider">
-                                        {col.name}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))
+                            collections?.slice(0, 8).map((col: any) => {
+                                // Get emoji based on category name
+                                const getEmoji = (name: string) => {
+                                    const n = name.toLowerCase();
+                                    if (n.includes("ring")) return "💍";
+                                    if (n.includes("bracelet")) return "📿";
+                                    if (n.includes("chain") || n.includes("necklace")) return "⛓️";
+                                    if (n.includes("pendant")) return "🔶";
+                                    if (n.includes("earring")) return "✨";
+                                    if (n.includes("pandora")) return "🌟";
+                                    if (n.includes("men")) return "👔";
+                                    if (n.includes("women")) return "👗";
+                                    if (n.includes("gift")) return "🎁";
+                                    if (n.includes("couple")) return "💑";
+                                    if (n.includes("best")) return "🔥";
+                                    return "💎";
+                                };
+
+                                return (
+                                    <TouchableOpacity
+                                        key={col.id}
+                                        className="mr-5 items-center"
+                                        onPress={() => {
+                                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                            router.push("/browse");
+                                        }}
+                                    >
+                                        <View className="w-[72px] h-[72px] rounded-full border border-[#DBAC33]/30 bg-white/5 items-center justify-center mb-2 overflow-hidden">
+                                            {col.imageUrl && col.imageUrl.length > 0 ? (
+                                                <Image
+                                                    source={{ uri: col.imageUrl }}
+                                                    style={{ width: 72, height: 72, borderRadius: 36 }}
+                                                    contentFit="cover"
+                                                />
+                                            ) : (
+                                                <Text className="text-3xl">{getEmoji(col.name)}</Text>
+                                            )}
+                                        </View>
+                                        <Text variant="bold" className="text-gray-300 text-[10px] uppercase tracking-wider text-center" numberOfLines={1} style={{ maxWidth: 72 }}>
+                                            {col.name.replace(" - ", "\n").split(" - ")[0]}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })
                         )}
                     </ScrollView>
                 </View>

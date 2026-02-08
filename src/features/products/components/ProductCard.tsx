@@ -1,4 +1,5 @@
 import { View, TouchableOpacity } from "react-native";
+import { useEffect } from "react";
 import { Image } from "expo-image";
 import { Product } from "../types";
 import { Text } from "../../../core/components/Text";
@@ -7,6 +8,15 @@ import { useRouter } from "expo-router";
 
 export const ProductCard = ({ product }: { product: Product }) => {
     const router = useRouter();
+
+    // DEBUG: Log the image URL for this product
+    console.log(`[ProductCard Render] ID:${product.id} Name:"${product.name}" ImageURL:"${product.images[0] || 'NO_IMAGE'}"`);
+
+    useEffect(() => {
+        if (product.images[0]) {
+            Image.prefetch(product.images[0]);
+        }
+    }, [product.images]);
 
     return (
         <TouchableOpacity
@@ -23,9 +33,12 @@ export const ProductCard = ({ product }: { product: Product }) => {
             <View className="relative w-full aspect-[3/4] rounded-[24px] overflow-hidden mb-3 border border-white/10 shadow-lg shadow-black/50">
                 <Image
                     source={{ uri: product.images[0] }}
-                    className="w-full h-full bg-[#1A1A1A]"
+                    style={{ width: '100%', height: '100%', backgroundColor: '#1A1A1A' }}
                     contentFit="cover"
                     transition={500}
+                    cachePolicy="memory-disk"
+                    onError={(e) => console.log(`[Image Error] ID:${product.id} URI:${product.images[0]} Error:${e.error}`)}
+                    onLoad={() => console.log(`[Image Loaded] ID:${product.id}`)}
                 />
 
                 {/* Gradient Overlay for text readability at bottom */}

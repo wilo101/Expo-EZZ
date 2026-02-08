@@ -5,13 +5,22 @@ import { BlurView } from "expo-blur";
 import animated, { useAnimatedStyle, withSpring, withTiming, useSharedValue, ZoomIn } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
+import { Text } from "../../src/core/components/Text";
 
-const AnimatedIcon = animated.createAnimatedComponent(View);
+const AnimatedView = animated.createAnimatedComponent(View);
 
 const TabBar = ({ state, descriptors, navigation }: any) => {
     return (
         <View style={styles.tabContainer}>
-            <BlurView intensity={30} tint="dark" style={styles.blurContainer}>
+            {/* Background with gradient border effect */}
+            <LinearGradient
+                colors={['rgba(219, 172, 51, 0.3)', 'rgba(219, 172, 51, 0.1)', 'rgba(255,255,255,0.05)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientBorder}
+            />
+            <BlurView intensity={40} tint="dark" style={styles.blurContainer}>
+                <View style={styles.innerBackground} />
                 <View style={styles.tabRow}>
                     {state.routes.map((route: any, index: number) => {
                         const { options } = descriptors[route.key];
@@ -53,58 +62,71 @@ const TabBar = ({ state, descriptors, navigation }: any) => {
 };
 
 const TabIcon = ({ isFocused, onPress, iconName, label }: any) => {
-    // Animation for the active indicator (Gold Glow)
-    const scale = useSharedValue(0);
+    const scale = useSharedValue(isFocused ? 1 : 0);
+    const iconScale = useSharedValue(isFocused ? 1.1 : 1);
 
     if (isFocused) {
-        scale.value = withSpring(1, { damping: 15 });
+        scale.value = withSpring(1, { damping: 15, stiffness: 150 });
+        iconScale.value = withSpring(1.1, { damping: 15 });
     } else {
-        scale.value = withTiming(0);
+        scale.value = withTiming(0, { duration: 200 });
+        iconScale.value = withTiming(1, { duration: 200 });
     }
 
-    const animatedStyle = useAnimatedStyle(() => ({
+    const backgroundStyle = useAnimatedStyle(() => ({
         transform: [{ scale: scale.value }],
-        opacity: scale.value
+        opacity: scale.value,
     }));
 
-    const getIcon = (color: string) => {
-        const size = 24;
+    const iconAnimStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: iconScale.value }],
+    }));
+
+    const getIcon = (color: string, size: number) => {
         switch (iconName) {
-            case "index": return <Home color={color} size={size} />;
-            case "search": return <Search color={color} size={size} />;
-            case "cart": return <ShoppingBag color={color} size={size} />;
-            case "profile": return <User color={color} size={size} />;
-            default: return <Home color={color} size={size} />;
+            case "index": return <Home color={color} size={size} strokeWidth={isFocused ? 2.5 : 1.5} />;
+            case "search": return <Search color={color} size={size} strokeWidth={isFocused ? 2.5 : 1.5} />;
+            case "cart": return <ShoppingBag color={color} size={size} strokeWidth={isFocused ? 2.5 : 1.5} />;
+            case "profile": return <User color={color} size={size} strokeWidth={isFocused ? 2.5 : 1.5} />;
+            default: return <Home color={color} size={size} strokeWidth={isFocused ? 2.5 : 1.5} />;
         }
     };
 
     return (
         <TouchableOpacity
             onPress={onPress}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
             style={styles.tabItem}
         >
-            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                {/* Active Indicator Background */}
-                <AnimatedIcon style={[StyleSheet.absoluteFillObject, styles.activeIndicator, animatedStyle]}>
-                    <LinearGradient
-                        colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']} // Subtle Silver Shine
-                        style={{ width: 50, height: 50, borderRadius: 25 }}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                    />
-                </AnimatedIcon>
+            {/* Active Background Glow */}
+            <AnimatedView style={[styles.activeBackground, backgroundStyle]}>
+                <LinearGradient
+                    colors={['rgba(219, 172, 51, 0.25)', 'rgba(219, 172, 51, 0.1)']}
+                    style={styles.activeGradient}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                />
+            </AnimatedView>
 
-                {/* Icon */}
-                <View style={{ marginBottom: 4 }}>
-                    {getIcon(isFocused ? "#F2F2F2" : "#BFC3C7")}
-                </View>
+            {/* Icon */}
+            <AnimatedView style={iconAnimStyle}>
+                {getIcon(isFocused ? "#DBAC33" : "#808080", isFocused ? 24 : 22)}
+            </AnimatedView>
 
-                {/* Active Dot (Turquoise Underline) */}
-                {isFocused && (
-                    <animated.View entering={ZoomIn} style={styles.activeDot} />
-                )}
-            </View>
+            {/* Label */}
+            <Text
+                style={[
+                    styles.label,
+                    { color: isFocused ? "#DBAC33" : "#808080" }
+                ]}
+            >
+                {label === "index" ? "Home" : label}
+            </Text>
+
+            {/* Active Indicator Line */}
+            {isFocused && (
+                <animated.View entering={ZoomIn.duration(200)} style={styles.activeLine} />
+            )}
         </TouchableOpacity>
     );
 };
@@ -115,7 +137,7 @@ export default function TabsLayout() {
             tabBar={props => <TabBar {...props} />}
             screenOptions={{
                 headerShown: false,
-                tabBarStyle: { position: 'absolute' }, // Required for BlurView to sit over content
+                tabBarStyle: { position: 'absolute' },
             }}
         >
             <Tabs.Screen name="index" options={{ title: "Home" }} />
@@ -129,48 +151,74 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
     tabContainer: {
         position: 'absolute',
-        bottom: 25,
-        left: 20,
-        right: 20,
-        borderRadius: 35,
+        bottom: Platform.OS === 'ios' ? 30 : 20,
+        left: 24,
+        right: 24,
+        borderRadius: 28,
         overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.5,
-        shadowRadius: 20,
-        elevation: 10,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+        elevation: 12,
+    },
+    gradientBorder: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        borderRadius: 28,
     },
     blurContainer: {
         width: '100%',
-        height: 70,
-        justifyContent: 'center',
+        height: 72,
+        borderRadius: 28,
+        overflow: 'hidden',
+    },
+    innerBackground: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(15, 15, 15, 0.85)',
     },
     tabRow: {
+        flex: 1,
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
-        paddingHorizontal: 10,
+        paddingHorizontal: 8,
     },
     tabItem: {
-        height: 60,
-        width: 60,
+        height: 56,
+        paddingHorizontal: 16,
         justifyContent: 'center',
         alignItems: 'center',
+        position: 'relative',
     },
-    activeIndicator: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: -1,
-    },
-    activeDot: {
-        width: 20, // Wider like a small underline
-        height: 2,
-        borderRadius: 1,
-        backgroundColor: '#1C6E7A', // Turquoise
-        marginTop: 4,
+    activeBackground: {
         position: 'absolute',
-        bottom: 8
-    }
+        top: 4,
+        left: 0,
+        right: 0,
+        bottom: 4,
+        borderRadius: 20,
+        overflow: 'hidden',
+    },
+    activeGradient: {
+        flex: 1,
+        borderRadius: 20,
+    },
+    label: {
+        fontSize: 10,
+        fontWeight: '600',
+        marginTop: 4,
+        letterSpacing: 0.3,
+    },
+    activeLine: {
+        position: 'absolute',
+        bottom: 0,
+        width: 20,
+        height: 3,
+        borderRadius: 2,
+        backgroundColor: '#DBAC33',
+    },
 });

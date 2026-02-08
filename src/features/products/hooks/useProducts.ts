@@ -5,43 +5,59 @@ import { Product } from "../types";
 
 const parseProductImages = (apiProduct: any): string[] => {
     const imageUrls: string[] = [];
-    const seenUrls = new Set<string>();
+    const seenBaseNames = new Set<string>();
 
-    // Helper to clean URL to high-res version
-    const getHighResUrl = (url: string): string => {
+    // Helper to extract base filename for deduplication
+    // e.g. "http://site.com/img_thumb.jpg" -> "img"
+    const getBaseName = (url: string): string => {
+        if (!url) return "";
+        const parts = url.split('/');
+        const filename = parts[parts.length - 1].split('?')[0];
+        // Remove extension
+        const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
+        // Remove common size suffixes to treat "img_thumb" and "img" as same
+        return nameWithoutExt.replace(/(_thumb|_small|_medium|_large|_\d+x\d+)$/i, '');
+    };
+
+    // Helper to clean URL - only removes query parameters
+    const getCleanUrl = (url: string): string => {
         if (!url || typeof url !== 'string') return "";
-        // Remove common low-res suffixes like _thumb, _small, _medium, _100x100, etc.
-        // Also remove query parameters like ?width=200
-        let cleanUrl = url.split('?')[0];
 
-        // Regex to strip dimension suffixes (e.g., _200x200, _thumb, _small)
-        // Adjust these patterns based on what the actual API returns if known,
-        // but these are common standard patterns.
-        cleanUrl = cleanUrl.replace(/(_thumb|_small|_medium|_large|_\d+x\d+)(\.[a-zA-Z]+)$/i, '$2');
-
-        return cleanUrl;
+        // Remove query parameters only (e.g., ?width=200)
+        // Do NOT try to strip _thumb/_small suffixes as this causes 404s
+        // Trust the API to provide the correct image URL
+        return url.split('?')[0];
     };
 
     const addUrl = (rawUrl: string) => {
-        const highRes = getHighResUrl(rawUrl);
-        if (highRes && highRes.length > 5 && !seenUrls.has(highRes)) {
-            seenUrls.add(highRes);
-            imageUrls.push(highRes);
+        if (!rawUrl || typeof rawUrl !== 'string') return;
+
+        const cleanUrl = getCleanUrl(rawUrl);
+        const baseName = getBaseName(cleanUrl);
+
+        // If we haven't seen this image base name before, add it
+        if (baseName && baseName.length > 2 && !seenBaseNames.has(baseName)) {
+            seenBaseNames.add(baseName);
+            imageUrls.push(cleanUrl);
         }
     };
 
-    // Priority 0: 'imagesUrls' (The most comprehensive source found in debugging)
-    // Structure: [{ id: 123, urls: ["url1", "url2", ...] }, ...]
+    // Priority 0: 'imagesUrls' (Detailed object structure)
+    // Structure: [{ id: 123, urls: [thumb, medium, large, original] }, ...]
+    // We want the LAST url (highest quality) not the first (thumbnail)
     if (Array.isArray(apiProduct.imagesUrls)) {
         apiProduct.imagesUrls.forEach((entry: any) => {
             if (entry && Array.isArray(entry.urls) && entry.urls.length > 0) {
-                // Usually the first URL is the original/main one
-                addUrl(entry.urls[0]);
+                // Pick the LAST url (typically highest resolution)
+                const highestQualityUrl = entry.urls[entry.urls.length - 1];
+                addUrl(highestQualityUrl);
             }
         });
     }
 
-    // Priority 1: 'images' array (usually contains the full list)
+    // Priority 1: 'images' array (Standard list)
+    // Only process if we haven't found enough images yet? 
+    // Usually these are consistent, so we can append, but deduplication deals with overlap.
     if (Array.isArray(apiProduct.images)) {
         apiProduct.images.forEach((img: any) => {
             if (typeof img === "string") addUrl(img);
@@ -51,20 +67,26 @@ const parseProductImages = (apiProduct: any): string[] => {
         });
     }
 
-    // Priority 2: Single fields (if not already covered by images array)
-    // Sometimes 'image' or 'main_image' is distinct or the only field present
-    const singleFields = ["image", "main_image", "image_url", "thumbUrl", "imageUrl"];
-    singleFields.forEach(field => {
-        if (typeof apiProduct[field] === "string") {
-            addUrl(apiProduct[field]);
-        }
-    });
+    // STOP if we have found images from the main arrays. 
+    // This prevents adding lower-quality fallbacks (like single fields or thumbs) that are likely duplicates.
+    if (imageUrls.length > 0) return imageUrls;
 
-    // Priority 3: 'thumbUrls' array (as fallback)
-    // Only use if we haven't found enough images yet (or merge if truly unique)
-    if (Array.isArray(apiProduct.thumbUrls)) {
-        apiProduct.thumbUrls.forEach((url: any) => {
-            if (typeof url === "string") addUrl(url);
+    // Priority 2: Single fields (Fallback if no arrays)
+    // Include thumbUrl as it's often the only field in list responses
+    const singleFields = ["main_image", "image", "imageUrl", "image_url", "thumbUrl"];
+    for (const field of singleFields) {
+        if (typeof apiProduct[field] === "string" && apiProduct[field]) {
+            addUrl(apiProduct[field]);
+            // If we found a main image, stop. Don't look for thumbs.
+            if (imageUrls.length > 0) return imageUrls;
+        }
+    }
+
+    // Priority 3: Collections of variants (Last Resort)
+    if (imageUrls.length === 0 && Array.isArray(apiProduct.variants)) {
+        apiProduct.variants.forEach((variant: any) => {
+            if (variant.image) addUrl(variant.image);
+            if (variant.imageUrl) addUrl(variant.imageUrl);
         });
     }
 
@@ -105,19 +127,46 @@ const mapApiProductToProduct = (apiProduct: any): Product => {
         price = apiProduct.discountedPriceCents / 100;
     } else if (apiProduct.priceCents && apiProduct.priceCents > 0) {
         price = apiProduct.priceCents / 100;
-    } else {
-        // Fallback to direct price fields
-        let directPrice = apiProduct.price || apiProduct.selling_price || apiProduct.sale_price || 0;
-        if (typeof directPrice === "string") {
-            // Remove commas and other non-numeric chars except dot
-            directPrice = directPrice.replace(/[^0-9.]/g, '');
-            price = parseFloat(directPrice) || 0;
-        } else {
-            price = directPrice;
+    } else if (apiProduct.variants && Array.isArray(apiProduct.variants) && apiProduct.variants.length > 0) {
+        // Fallback: Check first variant if defaultVariant is null
+        const firstVariant = apiProduct.variants[0];
+        if (firstVariant.discountedPriceCents > 0) price = firstVariant.discountedPriceCents / 100;
+        else if (firstVariant.priceCents > 0) price = firstVariant.priceCents / 100;
+        else if (firstVariant.price) {
+            const vPrice = firstVariant.price.toString().replace(/[^0-9.]/g, '');
+            price = parseFloat(vPrice) || 0;
         }
     }
 
-    console.log(`Mapping product ${id}: Price=${price}, Name=${apiProduct.name}, Category=${apiProduct.category || apiProduct.category_name}, Raw=${JSON.stringify(apiProduct).substring(0, 100)}`);
+    if (price === 0) {
+        // Fallback to direct price fields at root
+        // Check ALL potential price keys to capture any loose data
+        const directPrice = apiProduct.price ||
+            apiProduct.selling_price ||
+            apiProduct.sale_price ||
+            apiProduct.discountedPrice ||
+            apiProduct.final_price || 0;
+
+        if (typeof directPrice === "string") {
+            const cleanString = directPrice.replace(/[^0-9.]/g, '');
+            price = parseFloat(cleanString);
+        } else {
+            price = Number(directPrice);
+        }
+    }
+
+    // Safety check: ensure price is a valid number
+    if (isNaN(price)) price = 0;
+
+    const images = parseProductImages(apiProduct);
+
+    console.log(`[Price Debug] ID:${id} Name:"${apiProduct.name}" ParsedPrice:${price}`);
+    console.log(`[Image Debug] ID:${id} ImagesFound:${images.length} FirstImage:${images[0]}`);
+
+    if (images.length === 0 || images[0].includes("placeholder")) {
+        // Log Full Object if no images found to see what fields are available
+        console.log(`[Image Debug Missing] Raw JSON: ${JSON.stringify(apiProduct)}`);
+    }
 
     return {
         id,
@@ -126,7 +175,7 @@ const mapApiProductToProduct = (apiProduct: any): Product => {
         category: apiProduct.category || apiProduct.category_name || "uncategorized",
         price,
         currency: apiProduct.currency || "EGP",
-        images: parseProductImages(apiProduct),
+        images,
         material: apiProduct.material || apiProduct.metal_type || "925 Sterling Silver",
         inStock: defaultVariant.quantity > 0 || apiProduct.inStock === true || (apiProduct.quantity && apiProduct.quantity > 0),
         createdAt: apiProduct.createdAt || apiProduct.created_at || new Date().toISOString(),
@@ -139,6 +188,7 @@ export const useProducts = (params?: Record<string, any>) => {
     return useQuery({
         queryKey: ["products", params],
         queryFn: async () => {
+            console.log(`[API Debug] Fetching products with params:`, JSON.stringify(params));
             const { data } = await apiClient.get("/products", { params });
 
             // The API structure usually wraps products in a list/data field

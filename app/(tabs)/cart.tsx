@@ -3,8 +3,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "../../src/core/components/Text";
 import { useCartStore } from "../../src/core/api/cartStore";
 import { Trash2, Plus, Minus, ArrowRight } from "lucide-react-native";
+import { useRouter } from "expo-router";
 
 export default function CartScreen() {
+    const router = useRouter();
     const { items, updateQuantity, removeFromCart, getTotalPrice } = useCartStore();
 
     if (items.length === 0) {
@@ -91,7 +93,10 @@ export default function CartScreen() {
                         <Text variant="heading" className="text-xl text-primary">{getTotalPrice()} EGP</Text>
                     </View>
 
-                    <TouchableOpacity className="bg-primary h-14 rounded-2xl flex-row items-center justify-center">
+                    <TouchableOpacity
+                        onPress={() => router.push("/checkout")}
+                        className="bg-primary h-14 rounded-2xl flex-row items-center justify-center"
+                    >
                         <Text variant="bold" className="text-black text-lg mr-2">CHECKOUT</Text>
                         <ArrowRight size={20} color="black" />
                     </TouchableOpacity>
