@@ -4,7 +4,7 @@ import { Text } from "../src/core/components/Text";
 import { ArrowLeft, Search } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useProducts } from "../src/features/products/hooks/useProducts";
 import { useCollections } from "../src/features/products/hooks/useCollections";
 import { ProductCard } from "../src/features/products/components/ProductCard";
@@ -22,6 +22,10 @@ export default function BrowseScreen() {
 
     // No client-side filtering needed anymore
     const displayProducts = products || [];
+
+    const renderProduct = useCallback(({ item }: { item: any }) => (
+        <ProductCard product={item} />
+    ), []);
 
     if (productsLoading || colsLoading) {
         return (
@@ -88,7 +92,11 @@ export default function BrowseScreen() {
                 data={displayProducts}
                 numColumns={2}
                 columnWrapperStyle={{ justifyContent: "space-between", paddingHorizontal: 24 }}
-                renderItem={({ item }) => <ProductCard product={item} />}
+                renderItem={renderProduct}
+                initialNumToRender={10}
+                maxToRenderPerBatch={10}
+                windowSize={5}
+                removeClippedSubviews={true}
                 keyExtractor={(item) => item.id}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 100, paddingTop: 20 }}
