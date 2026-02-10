@@ -1,13 +1,14 @@
-import { View, FlatList, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native";
+import { View, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, ListRenderItem } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "../src/core/components/Text";
 import { ArrowLeft, Search } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useProducts } from "../src/features/products/hooks/useProducts";
 import { useCollections } from "../src/features/products/hooks/useCollections";
 import { ProductCard } from "../src/features/products/components/ProductCard";
+import { Product } from "../src/features/products/types";
 
 export default function BrowseScreen() {
     const router = useRouter();
@@ -22,6 +23,26 @@ export default function BrowseScreen() {
 
     // No client-side filtering needed anymore
     const displayProducts = products || [];
+
+    const renderItem: ListRenderItem<Product> = useCallback(({ item }) => (
+        <ProductCard product={item} />
+    ), []);
+
+    const keyExtractor = useCallback((item: Product) => item.id, []);
+
+    const ListHeaderComponent = useMemo(() => (
+        <View className="px-6 mb-4">
+            <Text className="text-gray-500 font-montserrat uppercase text-[10px] tracking-widest">
+                Found {displayProducts.length} items
+            </Text>
+        </View>
+    ), [displayProducts.length]);
+
+    const ListEmptyComponent = useMemo(() => (
+        <View className="py-20 items-center">
+            <Text className="text-gray-600">No products found in this category.</Text>
+        </View>
+    ), []);
 
     if (productsLoading || colsLoading) {
         return (
@@ -88,22 +109,16 @@ export default function BrowseScreen() {
                 data={displayProducts}
                 numColumns={2}
                 columnWrapperStyle={{ justifyContent: "space-between", paddingHorizontal: 24 }}
-                renderItem={({ item }) => <ProductCard product={item} />}
-                keyExtractor={(item) => item.id}
+                renderItem={renderItem}
+                keyExtractor={keyExtractor}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 100, paddingTop: 20 }}
-                ListHeaderComponent={() => (
-                    <View className="px-6 mb-4">
-                        <Text className="text-gray-500 font-montserrat uppercase text-[10px] tracking-widest">
-                            Found {displayProducts.length} items
-                        </Text>
-                    </View>
-                )}
-                ListEmptyComponent={() => (
-                    <View className="py-20 items-center">
-                        <Text className="text-gray-600">No products found in this category.</Text>
-                    </View>
-                )}
+                ListHeaderComponent={ListHeaderComponent}
+                ListEmptyComponent={ListEmptyComponent}
+                initialNumToRender={6}
+                maxToRenderPerBatch={6}
+                windowSize={5}
+                removeClippedSubviews={true}
             />
         </View>
     );
