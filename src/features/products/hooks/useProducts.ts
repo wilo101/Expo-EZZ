@@ -160,14 +160,6 @@ const mapApiProductToProduct = (apiProduct: any): Product => {
 
     const images = parseProductImages(apiProduct);
 
-    console.log(`[Price Debug] ID:${id} Name:"${apiProduct.name}" ParsedPrice:${price}`);
-    console.log(`[Image Debug] ID:${id} ImagesFound:${images.length} FirstImage:${images[0]}`);
-
-    if (images.length === 0 || images[0].includes("placeholder")) {
-        // Log Full Object if no images found to see what fields are available
-        console.log(`[Image Debug Missing] Raw JSON: ${JSON.stringify(apiProduct)}`);
-    }
-
     return {
         id,
         name: apiProduct.name || apiProduct.title || apiProduct.product_name || "Unknown Product",
@@ -188,7 +180,6 @@ export const useProducts = (params?: Record<string, any>) => {
     return useQuery({
         queryKey: ["products", params],
         queryFn: async () => {
-            console.log(`[API Debug] Fetching products with params:`, JSON.stringify(params));
             const { data } = await apiClient.get("/products", { params });
 
             // The API structure usually wraps products in a list/data field
