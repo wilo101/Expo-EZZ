@@ -1,11 +1,26 @@
 import axios from "axios";
 
+const API_KEY = process.env.EXPO_PUBLIC_API_KEY;
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
+const STORE_HASH = process.env.EXPO_PUBLIC_STORE_HASH;
+const DOMAIN = process.env.EXPO_PUBLIC_DOMAIN;
+const LOCALE = process.env.EXPO_PUBLIC_LOCALE || "en";
+
+if (!API_KEY || !API_URL || !STORE_HASH || !DOMAIN) {
+    console.error("Missing required environment variables!");
+    // We might not want to throw immediately if we want to avoid crashing the whole bundle execution just for import,
+    // but for an API client it's probably better to fail fast.
+    // However, throwing at module level can break the app startup completely with a red screen.
+    // Let's keep the throw for safety as per Sentinel guidelines "Fail securely".
+    throw new Error("Missing required environment variables (EXPO_PUBLIC_API_KEY, EXPO_PUBLIC_API_URL, EXPO_PUBLIC_STORE_HASH, EXPO_PUBLIC_DOMAIN)");
+}
+
 export const API_CONFIG = {
-    BASE_URL: "https://ezzsilver.myzammit.shop/api/v2",
-    API_KEY: "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxMTU5MTIsInR5cGUiOiJ1c2VyIiwiY29tcGFueV9pZCI6MTYzODQsImlhdCI6MTc2NTIzNDY4MX0.dE1Xk6aNzU82cSGMm4zrQma9WrJ5gU9RM4SqS5WPP_o",
-    STORE_HASH: "ezzsilver",
-    DOMAIN: "ezzsilver.myzammit.shop",
-    LOCALE: "en", // Match Flutter's defaultLocale
+    BASE_URL: API_URL,
+    API_KEY: API_KEY,
+    STORE_HASH: STORE_HASH,
+    DOMAIN: DOMAIN,
+    LOCALE: LOCALE,
 };
 
 const apiClient = axios.create({
