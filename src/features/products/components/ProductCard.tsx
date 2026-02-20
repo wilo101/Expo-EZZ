@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { View, TouchableOpacity } from "react-native";
 import { useEffect } from "react";
 import { Image } from "expo-image";
@@ -6,7 +7,8 @@ import { Text } from "../../../core/components/Text";
 import { Heart, ShoppingBag } from "lucide-react-native";
 import { useRouter } from "expo-router";
 
-export const ProductCard = ({ product }: { product: Product }) => {
+// Memoized to prevent unnecessary re-renders in FlatList/ScrollView
+export const ProductCard = memo(({ product }: { product: Product }) => {
     const router = useRouter();
 
     // DEBUG: Log the image URL for this product
@@ -67,4 +69,4 @@ export const ProductCard = ({ product }: { product: Product }) => {
             </View>
         </TouchableOpacity>
     );
-};
+});
