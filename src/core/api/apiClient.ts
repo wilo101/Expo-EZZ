@@ -1,11 +1,23 @@
 import axios from "axios";
 
+const {
+    EXPO_PUBLIC_BASE_URL,
+    EXPO_PUBLIC_API_KEY,
+    EXPO_PUBLIC_STORE_HASH,
+    EXPO_PUBLIC_DOMAIN,
+    EXPO_PUBLIC_LOCALE,
+} = process.env;
+
+if (!EXPO_PUBLIC_BASE_URL || !EXPO_PUBLIC_API_KEY || !EXPO_PUBLIC_STORE_HASH || !EXPO_PUBLIC_DOMAIN) {
+    throw new Error("Missing required environment variables for API configuration");
+}
+
 export const API_CONFIG = {
-    BASE_URL: "https://ezzsilver.myzammit.shop/api/v2",
-    API_KEY: "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxMTU5MTIsInR5cGUiOiJ1c2VyIiwiY29tcGFueV9pZCI6MTYzODQsImlhdCI6MTc2NTIzNDY4MX0.dE1Xk6aNzU82cSGMm4zrQma9WrJ5gU9RM4SqS5WPP_o",
-    STORE_HASH: "ezzsilver",
-    DOMAIN: "ezzsilver.myzammit.shop",
-    LOCALE: "en", // Match Flutter's defaultLocale
+    BASE_URL: EXPO_PUBLIC_BASE_URL,
+    API_KEY: EXPO_PUBLIC_API_KEY,
+    STORE_HASH: EXPO_PUBLIC_STORE_HASH,
+    DOMAIN: EXPO_PUBLIC_DOMAIN,
+    LOCALE: EXPO_PUBLIC_LOCALE || "en",
 };
 
 const apiClient = axios.create({
