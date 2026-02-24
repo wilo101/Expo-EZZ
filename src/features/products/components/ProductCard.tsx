@@ -1,22 +1,15 @@
 import { View, TouchableOpacity } from "react-native";
-import { useEffect } from "react";
+import { memo } from "react";
 import { Image } from "expo-image";
 import { Product } from "../types";
 import { Text } from "../../../core/components/Text";
-import { Heart, ShoppingBag } from "lucide-react-native";
+import { Heart } from "lucide-react-native";
 import { useRouter } from "expo-router";
 
-export const ProductCard = ({ product }: { product: Product }) => {
+// Optimized: Wrapped in memo to prevent unnecessary re-renders in FlatList
+// Optimized: Removed console.log and redundant Image.prefetch (handled by expo-image)
+const ProductCardComponent = ({ product }: { product: Product }) => {
     const router = useRouter();
-
-    // DEBUG: Log the image URL for this product
-    console.log(`[ProductCard Render] ID:${product.id} Name:"${product.name}" ImageURL:"${product.images[0] || 'NO_IMAGE'}"`);
-
-    useEffect(() => {
-        if (product.images[0]) {
-            Image.prefetch(product.images[0]);
-        }
-    }, [product.images]);
 
     return (
         <TouchableOpacity
@@ -38,7 +31,7 @@ export const ProductCard = ({ product }: { product: Product }) => {
                     transition={500}
                     cachePolicy="memory-disk"
                     onError={(e) => console.log(`[Image Error] ID:${product.id} URI:${product.images[0]} Error:${e.error}`)}
-                    onLoad={() => console.log(`[Image Loaded] ID:${product.id}`)}
+                    // onLoad={() => console.log(`[Image Loaded] ID:${product.id}`)} // Removed excessive logging
                 />
 
                 {/* Gradient Overlay for text readability at bottom */}
@@ -68,3 +61,5 @@ export const ProductCard = ({ product }: { product: Product }) => {
         </TouchableOpacity>
     );
 };
+
+export const ProductCard = memo(ProductCardComponent);
