@@ -1,8 +1,14 @@
 import axios from "axios";
 
+const API_KEY = process.env.EXPO_PUBLIC_API_KEY;
+
+if (!API_KEY) {
+    throw new Error("EXPO_PUBLIC_API_KEY is not defined in environment variables.");
+}
+
 export const API_CONFIG = {
     BASE_URL: "https://ezzsilver.myzammit.shop/api/v2",
-    API_KEY: "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxMTU5MTIsInR5cGUiOiJ1c2VyIiwiY29tcGFueV9pZCI6MTYzODQsImlhdCI6MTc2NTIzNDY4MX0.dE1Xk6aNzU82cSGMm4zrQma9WrJ5gU9RM4SqS5WPP_o",
+    API_KEY: API_KEY,
     STORE_HASH: "ezzsilver",
     DOMAIN: "ezzsilver.myzammit.shop",
     LOCALE: "en", // Match Flutter's defaultLocale
