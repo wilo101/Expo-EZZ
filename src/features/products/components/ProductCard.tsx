@@ -1,22 +1,13 @@
 import { View, TouchableOpacity } from "react-native";
-import { useEffect } from "react";
+import { memo } from "react";
 import { Image } from "expo-image";
 import { Product } from "../types";
 import { Text } from "../../../core/components/Text";
 import { Heart, ShoppingBag } from "lucide-react-native";
 import { useRouter } from "expo-router";
 
-export const ProductCard = ({ product }: { product: Product }) => {
+const ProductCardComponent = ({ product }: { product: Product }) => {
     const router = useRouter();
-
-    // DEBUG: Log the image URL for this product
-    console.log(`[ProductCard Render] ID:${product.id} Name:"${product.name}" ImageURL:"${product.images[0] || 'NO_IMAGE'}"`);
-
-    useEffect(() => {
-        if (product.images[0]) {
-            Image.prefetch(product.images[0]);
-        }
-    }, [product.images]);
 
     return (
         <TouchableOpacity
@@ -68,3 +59,5 @@ export const ProductCard = ({ product }: { product: Product }) => {
         </TouchableOpacity>
     );
 };
+
+export const ProductCard = memo(ProductCardComponent);
