@@ -1,12 +1,22 @@
 import axios from "axios";
 
 export const API_CONFIG = {
-    BASE_URL: "https://ezzsilver.myzammit.shop/api/v2",
-    API_KEY: "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxMTU5MTIsInR5cGUiOiJ1c2VyIiwiY29tcGFueV9pZCI6MTYzODQsImlhdCI6MTc2NTIzNDY4MX0.dE1Xk6aNzU82cSGMm4zrQma9WrJ5gU9RM4SqS5WPP_o",
-    STORE_HASH: "ezzsilver",
-    DOMAIN: "ezzsilver.myzammit.shop",
-    LOCALE: "en", // Match Flutter's defaultLocale
+    BASE_URL: process.env.EXPO_PUBLIC_BASE_URL || "",
+    API_KEY: process.env.EXPO_PUBLIC_API_KEY || "",
+    STORE_HASH: process.env.EXPO_PUBLIC_STORE_HASH || "",
+    DOMAIN: process.env.EXPO_PUBLIC_DOMAIN || "",
+    LOCALE: process.env.EXPO_PUBLIC_LOCALE || "en", // Match Flutter's defaultLocale
 };
+
+// Security: Validate required environment variables at runtime
+const requiredKeys: (keyof typeof API_CONFIG)[] = ["BASE_URL", "API_KEY", "STORE_HASH", "DOMAIN"];
+const missingKeys = requiredKeys.filter((key) => !API_CONFIG[key]);
+
+if (missingKeys.length > 0) {
+    console.error(`🚨 Critical Security/Config Error: Missing required environment variables: ${missingKeys.join(", ")}`);
+    // In a real production app, we might throw an error here, but to avoid crashing the dev environment immediately we just log it aggressively.
+    // throw new Error(`Missing required configuration: ${missingKeys.join(", ")}`);
+}
 
 const apiClient = axios.create({
     baseURL: API_CONFIG.BASE_URL,
@@ -27,16 +37,5 @@ const apiClient = axios.create({
     timeout: 30000,
 });
 
-// Interceptor to handle errors globally or add auth tokens if needed
-apiClient.interceptors.response.use(
-    (response) => {
-        console.log(`✅ API Success: ${response.config.method?.toUpperCase()} ${response.config.url}`);
-        return response;
-    },
-    (error) => {
-        console.error("❌ API Error:", error.response?.data || error.message);
-        return Promise.reject(error);
-    }
-);
 
 export default apiClient;
