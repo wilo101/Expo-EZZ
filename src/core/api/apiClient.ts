@@ -1,12 +1,17 @@
 import axios from "axios";
 
 export const API_CONFIG = {
-    BASE_URL: "https://ezzsilver.myzammit.shop/api/v2",
-    API_KEY: "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxMTU5MTIsInR5cGUiOiJ1c2VyIiwiY29tcGFueV9pZCI6MTYzODQsImlhdCI6MTc2NTIzNDY4MX0.dE1Xk6aNzU82cSGMm4zrQma9WrJ5gU9RM4SqS5WPP_o",
-    STORE_HASH: "ezzsilver",
-    DOMAIN: "ezzsilver.myzammit.shop",
+    BASE_URL: process.env.EXPO_PUBLIC_BASE_URL || "",
+    API_KEY: process.env.EXPO_PUBLIC_API_KEY || "",
+    STORE_HASH: process.env.EXPO_PUBLIC_STORE_HASH || "",
+    DOMAIN: process.env.EXPO_PUBLIC_DOMAIN || "",
     LOCALE: "en", // Match Flutter's defaultLocale
 };
+
+// 🛡️ Sentinel: Ensure required environment variables are present
+if (!API_CONFIG.BASE_URL || !API_CONFIG.API_KEY || !API_CONFIG.STORE_HASH || !API_CONFIG.DOMAIN) {
+    console.error("🚨 CRITICAL: Missing required API configuration in environment variables.");
+}
 
 const apiClient = axios.create({
     baseURL: API_CONFIG.BASE_URL,
@@ -26,17 +31,5 @@ const apiClient = axios.create({
     },
     timeout: 30000,
 });
-
-// Interceptor to handle errors globally or add auth tokens if needed
-apiClient.interceptors.response.use(
-    (response) => {
-        console.log(`✅ API Success: ${response.config.method?.toUpperCase()} ${response.config.url}`);
-        return response;
-    },
-    (error) => {
-        console.error("❌ API Error:", error.response?.data || error.message);
-        return Promise.reject(error);
-    }
-);
 
 export default apiClient;
